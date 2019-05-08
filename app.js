@@ -41,6 +41,8 @@ db.connect(function(err) {
 
             .get((req,res) =>{
 
+                //voir si ID existe
+
                 db.query('SELECT * FROM Members WHERE id = ?', [req.params.id], (err, result) => {
                     if(err){
                         res.json(error(err.message))
@@ -69,60 +71,80 @@ db.connect(function(err) {
 
                 if(req.body.name){
 
-                    
+                    db.query('SELECT * FROM Members WHERE id = ?', [req.params.id], (err, result) => {
+                        if(err){
+                            res.json(error(err.message))
+                        }else{
+    
+                            if(result[0] != undefined){
+    
+                                db.query('SELECT * FROM Members WHERE name = ? AND id != ?', [req.body.name, req.params.id], (err,result) =>{
+
+                                    if(err){
+                                        res.json(error(err.message))
+                                    }else{
+
+                                        if(result[0] != undefined){
+                                            res.json(error('same name'))
+                                        }else {
+
+
+                                            db.query('UPDATE Members SET name = ? WHERE id = ?', [req.body.name, req.params.id], (err,result) =>{
+
+                                                if(err){
+                                                    res.json(error(err.message))
+                                                }else{
+
+                                                    res.json(success(true))
+
+                                                }
+                                            })
+                                        }
+                                    }
+                                })
+
+                            }else{
+    
+                                res.json(error('wrong ID'))
+    
+                            }
+                        }
+                    })
 
                 }else{
                     res.json(error('no name value'))
                 }
-
-
-                let index = getIndex(req.params.id)
-
-                if(typeof(index) == 'string'){
-                    res.json(error(index))
-                }else{
-
-                    let same = false
-
-                    for(let i = 0; i < members.length; i++){
-                        if(req.body.name == members[i].name && req.params.id != members[i].id){
-                            same = true
-                            break
-
-                        }
-                    }
-
-
-                    if(same){
-                        res.json(error('same name'))
-                    }else{
-                        members[index].name = req.body.name;
-                        res.json(success(true))
-                    }
-
-
-                }
-
-
-
-
             })
 
 
         //supprime un membre par id
             .delete((req,res) =>{
-                let index = getIndex(req.params.id)
 
-                if(typeof(index) == 'string'){
-                    res.json(error(index))
-                }else{
-                    
-                    members.splice(index,1)
+                db.query('SELECT * FROM Members WHERE id = ?', [req.params.id], (err, result) => {
+                    if(err){
+                        res.json(error(err.message))
+                    }else{
 
-                    res.json(success(members))
+                        if(result[0] != undefined){
+
+                            db.query('DELETE FROM Members WHERE id = ?', [req.params.id], (err, result) =>{
+                                if(err){
+                                    res.json(error(err.message))
+                                }else{
+                                    res.json(success(true))
+                                }
+                            }) 
+
+                        }else{
+
+                            res.json(error('wrong ID'))
+
+                        }
 
 
-                }
+                    }
+                })
+
             })
 
 
@@ -234,17 +256,6 @@ db.connect(function(err) {
 });
 
 
-function getIndex(id){
-    for(let i = 0; i < members.length; i++){
-        if(members[i].id == id)
-        return i
-    }
-    return 'wrong id'
-}
-
-function createId(){
-    return members[members.length-1].id+1
-}        
 
 
 
